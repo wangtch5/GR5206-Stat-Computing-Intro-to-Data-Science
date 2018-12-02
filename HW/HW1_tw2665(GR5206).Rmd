@@ -1,0 +1,91 @@
+---
+title: "HW1 GR5206"
+author: Tianchen Wang / tw2665
+date: Sep 14, 2018
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+
+### Part 1
+i)
+```{r Import Data}
+titanic <- read.table('Titanic.txt', as.is = TRUE, header = TRUE, sep = '')
+```
+
+ii)
+```{r}
+dim(titanic)
+```
+891 rows and 12 columns
+
+iii)
+```{r Survived.Word}
+died <- which(titanic$Survived == 0)
+Survived.Word <- rep('survived', dim(titanic)[1])
+Survived.Word[died] <- 'died'
+titanic$Survived.Word <- Survived.Word
+```
+### Part 2
+i)
+```{r Exploring Data}
+dataForMean <- cbind(titanic$Survived, titanic$Age, titanic$Fare)
+meanForEachCol <- apply(dataForMean, 2, mean)
+# check if there are NA in Age column
+meanForEachCol
+sum(is.na(titanic$Age)) > 0
+```
+The mean of age column is NA, because there are NA in this column and such data is not a numeric data, which means the function **mean** does not know how to deal with it without setting **na.rm == TRUE**.
+
+ii)
+```{r}
+totalNum <- dim(titanic)[1]
+femaleSurvived <- titanic[titanic$Sex == "female", ]
+femaleNum <- dim(femaleSurvived)[1]
+femaleSurvived <- femaleSurvived[femaleSurvived$Survived == 1,]
+femaleSurvivedNum <- dim(femaleSurvived)[1]
+round(femaleSurvivedNum / femaleNum, digits = 2)
+round(femaleSurvivedNum / totalNum, digits = 2)
+
+```
+Since I am not sure what is meaning of "This is not a conditional probability" in the question. I just compute the proportion of both survived female out of the whole titanic victim list and the proportion of survived female out of the female passengers.
+The first one is 0.26. The second one is 0.74, which means most female were survived. I have to say this really showed the good in human nature of the passangers of Titanic. 
+
+iii)
+```{r}
+survived <- titanic[titanic$Survived == 1, ]
+survivedNum <- dim(survived)[1]
+round(femaleSurvivedNum / survivedNum, digits = 2)
+
+```
+
+iv)
+```{r}
+classes <- sort(unique(titanic$Pclass))
+Pclass.Survival <- vector("numeric", length = 3)
+names(Pclass.Survival) <- classes
+
+for (i in 1:3) {
+  temData <- titanic[titanic$Pclass == i, ]
+  proportion <- mean(temData$Survived)
+  Pclass.Survival[i] <- round(proportion, digits = 2)
+}
+remove(temData)
+Pclass.Survival
+```
+
+v)
+```{r}
+Pclass.Survival2 <- tapply(titanic$Survived, titanic$Pclass, 
+                           function(x) round(mean(x), digits = 2))
+Pclass.Survival2
+```
+Basically, the **tapply** will apply function on data in the first input separated by the different level of second input. 
+
+vi)
+From the survived rate computed above, it is easy to find the higher the class rank is, the higher the survival rate.
+

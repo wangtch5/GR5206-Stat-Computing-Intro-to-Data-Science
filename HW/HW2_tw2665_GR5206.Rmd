@@ -1,0 +1,67 @@
+---
+title: "HW2_tw2665"
+author: "Tianchen Wang / tw2665"
+date: "2018/9/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW2
+
+### part1: Loading and Cleaning
+```{r 1}
+housing <- read.csv("NYChousing.csv")
+dim(housing)
+# there are 2506 rows and 22 cols.
+na_lines <- apply(is.na(housing), 2, sum)
+# check how many NA does each line of housing have
+row_na <- ifelse(is.na(housing$Value), FALSE, TRUE)
+housing <- housing[row_na, ]
+na_lines['Value'] == sum(row_na == FALSE)
+# yes, it matches. I removed 52 lines from housing dataframe.
+housing$logValue <- log(housing$Value)
+min(housing$logValue)
+median(housing$logValue)
+mean(housing$logValue)
+max(housing$logValue)
+housing$logUnits <- log(housing$UnitCount)
+housing$after1950 <- housing$YearBuilt>1950
+
+```
+### part2: EDA
+```{r 2}
+plot(housing$logUnits, housing$logValue, main = 'scatter plot', xlab = 'logUnits', ylab = 'logValue')
+
+plot(housing$logUnits, housing$logValue, main = 'scatter plot', xlab = 'logUnits', ylab = 'logValue', col = factor(housing$after1950))
+legend("bottomright", legend = levels(factor(housing$after1950)), fill = unique(factor(housing$after1950)))
+
+# for the whole data, corelation is 0.8727348
+cor(housing$logValue, housing$logUnits)
+# for the whole Brooklyn borough, corelation b/t logValue and logUnits
+cor(housing[housing$Borough == "Brooklyn", ]$logValue, housing[housing$Borough == "Brooklyn", ]$logUnits)
+# for the whole Manhattan, corelation b/t logValue and logUnits
+cor(housing[housing$Borough == "Manhattan", ]$logValue, housing[housing$Borough == "Manhattan", ]$logUnits)
+# for the properties after 1950
+cor(housing[housing$after1950 == TRUE, ]$logValue, housing[housing$after1950 == TRUE, ]$logUnits)
+# for the properties before 1950
+cor(housing[housing$after1950 == FALSE, ]$logValue, housing[housing$after1950 == FALSE, ]$logUnits)
+
+# plot for Manhattan and Brooklyn
+plot(housing[housing$Borough == c("Manhattan","Brooklyn"), ]$logUnits, housing[housing$Borough == c("Manhattan","Brooklyn"), ]$logValue, main = 'Manhattan and Brooklyn', xlab = 'logUnits', ylab = 'logValue', col = factor(housing[housing$Borough == c("Manhattan","Brooklyn"), ]$Borough))
+legend("bottomright", legend = levels(factor(c("Manhattan", "Brooklyn"))), fill = unique(factor(c("Manhattan", "Brooklyn"))))
+
+# one line code
+median(housing[housing$Borough == "Manhattan",]$Value, na.rm = TRUE)
+
+# side-by-side box plots
+boxplot(logValue~factor(Borough), data = housing, cex.axis = 0.7)
+
+# compute median for each borough of NY
+tapply(housing$Value, housing$Borough, median)
+
+
+```
+

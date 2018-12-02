@@ -1,0 +1,90 @@
+---
+title: "HW3_GR5206"
+author: "Tianchen Wang / tw2665"
+date: "2018/10/5"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW3
+
+### i)
+Just download the website and store it in .html.
+
+### ii)
+number of lines: 106
+number of chars: 463901
+max number of chars in a single line: 64
+```{r}
+nets1819 <- readLines("NetSchedule1819.htm", warn = FALSE)
+# head(nets1819)
+typeof(nets1819)
+numLines <- length(nets1819)
+cat("number of lines in file, ", numLines, "\n")
+# use nchar() to calculate the length of a given string
+numChars <- sum(sapply(nets1819, nchar))
+cat("number of chars in file, ", numChars, "\n")
+max_length <- max(sapply(nets1819, nchar))
+cat("which line has the most chars? ", which(nchar(nets1819) == max_length), "\n")
+max_length
+```
+
+### iii)
+Playing first: 
+7:00 PM Wed, Oct 17 DET
+
+Playing last:
+9:00 PM Wed, Apr 10 MIA
+
+### iv)
+line 764. Use grep() to identify the line that contains all the info we need.
+
+### v)
+```{r }
+seasonGames <- nets1819[grep("data-idx=\"[0-9]+\"", nets1819)]
+splitGames <- unlist(strsplit(seasonGames, "data-idx"))
+```
+
+### vi, vii, viii)
+```{r }
+pattern_date <- "[A-Z]{1}[a-z]{2}, [A-Z]{1}[a-z]{2} [0-9]+"
+
+games <- splitGames[grep(pattern_date, splitGames)]
+length(games)
+
+date <- unlist(lapply(games, function(x) regmatches(x, regexpr(pattern_date, x))))
+```
+
+### ix)
+```{r}
+pattern_time <- "[0-9]{1}:[0-9]{2} [A|P]M"
+time <- unlist(lapply(games, function(x) regmatches(x, regexpr(pattern_time, x))))
+```
+
+### x)
+```{r}
+pattern_loc <- "class=\"pr2\">@|class=\"pr2\">(vs)"
+
+home <- unlist(lapply(games, function(x) substring(regmatches(x, regexpr(pattern_loc, x)), 13)))
+home <- as.factor(ifelse(home=="vs", 1, 0))
+```
+
+### xi)
+```{r}
+pattern_op <- "style=\"width:20px;height:20px\"><a href=\"/nba/team/_/name/[a-z]+"
+opponent <- unlist(lapply(games, function(x) substring(regmatches(x, regexpr(pattern_op, x)), 58)))
+# use subtring to extract the target characters(ignore the first one)
+opponent <- toupper(opponent)
+```
+
+### xii)
+```{r}
+df <- data.frame( Date = date, Time = time, Opponent = opponent, Home = home)
+head(df, 10)
+```
+

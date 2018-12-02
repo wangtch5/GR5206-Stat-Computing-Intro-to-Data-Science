@@ -1,0 +1,139 @@
+---
+title: "HW4_GR5206_tw2665"
+author: "Tianchen Wang / tw2665"
+date: "2018/10/13"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW4
+
+### 1 & 2
+```{r}
+library("plyr")
+debt <- read.csv("debt.csv", as.is = TRUE)
+dim(debt)
+head(debt)
+
+mean.growth <- function(x){
+  return(signif(mean(x$growth), 3))
+}
+daply(debt, .(Country), mean.growth)
+# daply(debt, .(Country), function(x) signif(mean(x$growth), 3))
+
+year_growth <- daply(debt, .(Year), mean.growth)
+year_growth["1972"]
+year_growth["1989"]
+# ungly pic..
+par(mar=c(10,5,10,2))
+barplot(year_growth, xlab = "Year", ylab = "average GDP growth rate", cex.names = 1, ylim = c(-4,8), las = 2)
+
+
+```
+
+### 3 
+```{r }
+# a)
+signif(cor(debt$growth, debt$ratio), 4)
+
+# b)
+ccor_gr <- daply(debt, .(Country), function(x) signif(cor(x$growth, x$ratio), 3))
+signif(mean(ccor_gr), 4)
+hist(ccor_gr, breaks = 10, xlab = "Correlation b/t Growth and Ratio in Countries")
+barplot(ccor_gr, las = 2, col = ((ccor_gr>0)+2), cex.names = 0.8)
+
+# c)
+tcor_gr <- daply(debt, .(Year), function(x) signif(cor(x$growth, x$ratio), 3))
+signif(mean(tcor_gr), 4)
+hist(tcor_gr, xlab = "Correlation b/t Growth and Ratio in Years")
+barplot(tcor_gr ,las = 2, col = ((tcor_gr>0)+2), cex.names = 1)
+
+# d) From the first barplot, I found there are five countries(Australia, Canada, New Zealand, Norway, Spain) have positive correlation not like other countries and among them, Norway has the most extrame difference. From the sencond plot, year 1978 has the largest positive correlation and year 1957 has the largest negative correlation.
+```
+
+### 4 
+```{r}
+fit <- lm(growth ~ ratio, data = debt)
+coeff <- fit$coefficients
+coeff
+
+{
+  plot(debt$ratio, debt$growth, xlab = "Ratio", ylab = "Growth", main = "1")
+  lines(debt$ratio, debt$ratio*coeff[2] + coeff[1], col = 2)
+}
+```
+
+### 5
+```{r}
+sum(ccor_gr < -.5)
+cat("which country has correlation smaller than .5? \n", names(which(ccor_gr < -.5)))
+{
+  par(mfrow = c(2,2))
+  for (name in names(ccor_gr[ccor_gr < -0.5])){
+    df <- subset(debt, Country == name)
+    plot(df$growth, df$ratio, main = name, xlab = "Growth", ylab = "Ratio")
+  }
+}
+```
+
+### 6
+```{r}
+# a)
+France <- debt[debt$Country == "France", ]
+dim(France)
+# missing some years.
+
+# b)
+next.growth <- function(df){
+  next_ <- numeric(length = length(df$Year))
+  for (i in 1:(length(df$Year)-1)){
+    if (df$Year[i+1] == (df$Year[i]+1) ){
+      next_[i] <- round(df[df$Year == df$Year[i+1],]$growth, 3)
+    }
+    else next_[i] <- NA
+  }
+  next_[length(next_)] <- NA
+  df$next.growth <- next_
+  return(df)
+}
+France <- next.growth(France)
+France[c(22,23),]
+
+```
+
+### 7
+```{r}
+debt <- ddply(debt, .(Country), next.growth)
+```
+
+### 8 
+```{r}
+fit2 <- lm(debt$next.growth~debt$ratio)
+coeff2 <- fit2$coefficients
+coeff2
+{
+  plot(debt$ratio, debt$next.growth, xlab = "Ratio", ylab = "Growth", main = "2")
+  lines(debt$ratio, coeff2[1] + coeff2[2]*debt$ratio, col = 2)
+}
+```
+The coefficients of last one and this one are different. The slope of fit2 is bigger than slope of fit1, and intercept is smaller than fit1.
+
+### 9
+```{r}
+y <- debt$next.growth[is.na(debt$next.growth)==FALSE]
+fit3 <- lm(y ~ debt$growth[is.na(debt$next.growth)==FALSE])
+coeff3 <- fit3$coefficients
+coeff3
+{
+  plot(debt$growth[is.na(debt$next.growth)==FALSE], y, ylab = "next.growth", xlab = "growth")
+  lines(debt$growth[is.na(debt$next.growth)==FALSE], fit3$fitted.values, col = 2)
+
+}
+```
+
+I think the last one(current growth) is a better predictor, since as shown on the graph, data is more concentrated to the center of regression line.
