@@ -1,0 +1,113 @@
+---
+title: "HW7_GR5206"
+author: "Tianchen Wang / tw2665"
+date: "2018/11/28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW7
+
+
+```{r}
+library(plyr)
+moretti <- read.csv("moretti.csv")
+
+# i 
+poisLogLik <- function(lambda, data){
+ sum(sapply(data, function(x) log((lambda^x*exp(-lambda))/factorial(x))))
+}
+poisLogLik(1, c(1,0,0,1,1))
+
+# ii
+count_new_genres <- function(year){
+  begin_year <- dlply(moretti, .(Begin), function(x) x$Name)
+  return(length(begin_year[[as.character(year)]]))
+}
+
+count_new_genres(1803)
+count_new_genres(1850)
+
+# iii
+new_genre <- sapply(1740:1900, count_new_genres)
+new_genre[1803-1740+1]
+new_genre[1850-1740+1]
+
+# iv
+y <- sapply(seq(0.001,1,0.001), function(x) poisLogLik(x,new_genre))
+cat("maximum poisLogLik(lambda, new_genre)", max(y))
+max(y) == poisLogLik(0.273, new_genre)
+plot(seq(0.001,1,0.001), y, type = 'l', lty = 1)
+
+# v.
+poisLogLik_new <- function(lambda){
+ -sum(sapply(new_genre, function(x) log((lambda^x*exp(-lambda))/factorial(x))))
+}
+nlm(poisLogLik_new, 0.2)$estimate
+
+# vi
+intergenre_intervals <- numeric(sum(new_genre))
+j <- 1
+for(i in 1:length(new_genre)){
+  tmp <- new_genre[i]
+  while(tmp > 0){
+    intergenre_intervals[j] <- i + 1739
+    tmp <- tmp - 1
+    j <- j + 1
+  }
+} 
+# intergenre_intervals <- intergenre_intervals[-1] - intergenre_intervals[1:43] 
+intergenre_intervals <- diff(intergenre_intervals, lag = 1)
+intergenre_intervals
+cat("mean of intergenre_intervals ", mean(intergenre_intervals), '\n')
+cat("sd of intergenre_intervals ", sd(intergenre_intervals), '\n')
+moretti.variation <- sd(intergenre_intervals)/mean(intergenre_intervals)
+cat("coefficient of variation ", moretti.variation)
+
+
+# vii
+# a.
+giveBackIntervals <- function(x){
+  intergenre_intervals <- numeric(sum(x))
+  j <- 1
+  for(i in 1:length(x)){
+    tmp <- x[i]
+    while(tmp > 0){
+      intergenre_intervals[j] <- i + 1739
+      tmp <- tmp - 1
+      j <- j + 1
+    }
+  }
+  intergenre_intervals <- diff(intergenre_intervals, lag = 1)
+  return(intergenre_intervals)
+}
+all(giveBackIntervals(new_genre) == intergenre_intervals)
+
+# b.
+sim_poisson <- function(n, lambda){
+  x <- 0:5
+  prob <- (lambda^x*exp(-lambda))/factorial(x)
+  new_genre <- sample(x, n, prob = prob, replace = TRUE)
+  intervals <- giveBackIntervals(new_genre)
+  return(list(inter = intervals, variation = sd(intervals)/mean(intervals)))
+}
+sims <- sim_poisson(161, 0.273)
+sims
+mean(sims$inter)
+
+# viii
+result <- numeric(10000)
+for (i in 1:10000) {
+  result[i] <- sim_poisson(161, 0.273)$variation
+}
+mean(result > moretti.variation)
+```
+ix.
+This does not tell us that genres are tend to appear together in burst, since the only information we have is variation of intervals is always around 1. According to the new_genres of moretti, the appreance of genres show up scattered among the years, but there are only like at most 5 new genres showed up in a single year. I am not sure whether you should call such situation as a burst, since there are only 1 or 2 new genres showed up in one year and there is no pattern showed that these years are close to each other.
+I believe this does tell us that new genres will appear discretely and the distance between each new genres showed up year is somehow randomly. 
+
