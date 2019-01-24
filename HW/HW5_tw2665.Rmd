@@ -1,4 +1,4 @@
----
+5---
 title: 'Homework 5: ggplot Practice'
 author: "Tianchen Wang / tw2665"
 output:
